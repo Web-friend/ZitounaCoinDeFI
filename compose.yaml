@@ -1,0 +1,68 @@
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: zitounadefi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zitouna
+      POSTGRES_PASSWORD: zitouna
+      POSTGRES_DB: zitounadefi
+    ports:
+      - "5434:5432"
+    volumes:
+      - zitounadefi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zitouna -d zitounadefi"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: zitounadefi-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://zitouna:zitouna@db:5432/zitounadefi?schema=public
+      PORT: 4000
+      APP_BASE_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+      LEDGER_MODE: ${LEDGER_MODE:-stub}
+      HEDERA_NETWORK: ${HEDERA_NETWORK:-testnet}
+      HEDERA_OPERATOR_ID: ${HEDERA_OPERATOR_ID:-}
+      HEDERA_OPERATOR_KEY: ${HEDERA_OPERATOR_KEY:-}
+      HEDERA_OPERATOR_PUBLIC_KEY: ${HEDERA_OPERATOR_PUBLIC_KEY:-}
+      TUSDT_TOKEN_ID: ${TUSDT_TOKEN_ID:-}
+      DGZ_TOKEN_ID: ${DGZ_TOKEN_ID:-}
+      TZT_TOKEN_ID: ${TZT_TOKEN_ID:-}
+      LOT_NFT_TOKEN_ID: ${LOT_NFT_TOKEN_ID:-}
+      AGENT_TOPIC_ID: ${AGENT_TOPIC_ID:-}
+      ATTESTATION_STALE_SECONDS: ${ATTESTATION_STALE_SECONDS:-2592000}
+      DEMO_STALE_SECONDS: ${DEMO_STALE_SECONDS:-60}
+      PAUSE_AGENT: ${PAUSE_AGENT:-false}
+      TND_PER_USD_CENTS: ${TND_PER_USD_CENTS:-310}
+      REDEMPTION_DEADLINE_SECONDS: ${REDEMPTION_DEADLINE_SECONDS:-604800}
+      LOW_STOCK_BPS: ${LOW_STOCK_BPS:-1000}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./keys:/app/keys
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: zitounadefi-web
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  zitounadefi_pgdata:
