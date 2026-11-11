@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #f7f4ea;
+  --color-cream-deep: #efe9d8;
+  --color-ink: #1f2a1a;
+  --color-ink-soft: #4d5645;
+  --color-olive: #4f5d3a;
+  --color-olive-deep: #364126;
+  --color-olive-light: #dfe5d2;
+  --color-gold: #c8a96b;
+  --color-gold-soft: #eadfc4;
+  --color-rust: #a23b2a;
+  --color-rust-soft: #f3d9d3;
+  --color-amber: #a96b17;
+  --color-amber-soft: #f5e5c8;
+  --color-ok: #356b3f;
+  --color-ok-soft: #d9e8d8;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, #e9e3cf 0%, transparent 60%),
+      var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  a {
+    color: inherit;
+  }
+  button, input, select, textarea {
+    font: inherit;
+  }
+  ::selection {
+    background: var(--color-gold-soft);
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  .card {
+    @apply rounded-2xl border border-ink/10 bg-white/70 shadow-[0_1px_0_rgba(31,42,26,0.04),0_18px_40px_-30px_rgba(31,42,26,0.4)] backdrop-blur;
+  }
+  .card-flat {
+    @apply rounded-xl border border-ink/10 bg-white/60;
+  }
+  .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-olive text-cream hover:bg-olive-deep active:scale-[0.99];
+  }
+  .btn-secondary {
+    @apply border border-olive/30 bg-transparent text-olive hover:bg-olive-light/60;
+  }
+  .btn-ghost {
+    @apply text-ink-soft hover:bg-ink/5;
+  }
+  .btn-danger {
+    @apply bg-rust text-white hover:bg-rust/90;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink outline-none ring-olive/20 placeholder:text-ink/35 focus:border-olive/50 focus:ring-4;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em];
+  }
+  .table {
+    @apply w-full text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-ink/10 pb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft;
+  }
+  .table td {
+    @apply border-b border-ink/5 py-2.5 align-top;
+  }
+  .link {
+    @apply underline decoration-olive/30 underline-offset-4 hover:decoration-olive;
+  }
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.22em] text-olive/70;
+  }
+}
+
+.passport-banner {
+  background:
+    linear-gradient(135deg, rgba(79, 93, 58, 0.97), rgba(54, 65, 38, 0.98));
+  color: #f7f4ea;
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: radial-gradient(rgba(31, 42, 26, 0.12) 0.6px, transparent 0.6px);
+  background-size: 9px 9px;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: 2px solid #1f2a1a !important;
+  }
+}

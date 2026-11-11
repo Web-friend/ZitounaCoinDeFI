@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountRole {
+  OPERATOR
+  PRODUCER
+  TREASURY
+  BUYER
+  AUDITOR
+}
+
+enum Series {
+  DGZ
+  TZT
+}
+
+enum TokenKind {
+  FUNGIBLE
+  NFT
+}
+
+enum LotStatus {
+  CERTIFIED
+  LISTED
+  ACTIVE
+  LOW_STOCK
+  DEPLETED
+  PAUSED
+}
+
+enum TradeStatus {
+  COMPLETED
+  FAILED
+}
+
+enum RedemptionStatus {
+  REQUESTED
+  HANDED_OVER
+  BURNED
+  RETURNED
+}
+
+enum MessageType {
+  GENESIS
+  ATTESTATION
+  LISTING
+  SALE
+  TRANSFER
+  REDEMPTION
+  HANDOVER
+  BURN
+  VERDICT
+}
+
+enum Verdict {
+  BACKED
+  LOW_STOCK
+  UNDERBACKED
+  STALE
+  INVALID
+}
+
+model Account {
+  id              String       @id @default(cuid())
+  role            AccountRole
+  label           String
+  hederaAccountId String       @unique
+  publicKey       String?
+  keyEnvVar       String?
+  isDemo          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+
+  lots            Lot[]        @relation("ProducerLots")
+  trades          Trade[]
+  transfersFrom   Transfer[]   @relation("TransferFrom")
+  transfersTo     Transfer[]   @relation("TransferTo")
+  redemptions     Redemption[]
+  balances        TokenBalance[]
+}
+
+model Token {
+  id                String         @id @default(cuid())
+  kind              TokenKind
+  series            Series?
+  name              String
+  symbol            String
+  tokenId           String         @unique
+  decimals          Int            @default(0)
+  maxSupply         Int?
+  treasuryAccountId String?
+  createdAt         DateTime       @default(now())
+
+  balances          TokenBalance[]
+
+  @@unique([kind, series])
+}
+
+model Lot {
+  id                 String        @id @default(cuid())
+  code               String        @unique
+  series             Series
+  grade              String        @default("extra_virgin")
+  certifiedMl        Int
+  remainingMl        Int
+  pricePerLitreCents Int
+  tndPerUsdCents     Int           @default(310)
+  warehouse          String
+  harvestYear        Int
+  status             LotStatus     @default(CERTIFIED)
+  topicId            String?       @unique
+  nftTokenId         String?
+  nftSerial          Int?
+  auditorPublicKey   String
+  producerId         String
+  certifiedAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  producer           Account       @relation("ProducerLots", fields: [producerId], references: [id])
+  attestations       Attestation[]
+  listing            Listing?
+  trades             Trade[]
+  transfers          Transfer[]
+  redemptions        Redemption[]
+  verdicts           AgentVerdict[]
+  messages           LedgerMessage[]
+}
+
+model Attestation {
+  id              String   @id @default(cuid())
+  lotId           String
+  seq             Int
+  litresRemaining Int
+  labHash         String
+  receiptHash     String
+  recordText      String
+  signature       String
+  chainHash       String
+  consensusTs     DateTime
+  createdAt       DateTime @default(now())
+
+  lot             Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, seq])
+}
+
+model Listing {
+  id                 String   @id @default(cuid())
+  lotId              String   @unique
+  pricePerLitreCents Int
+  litresOfferedMl    Int
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  lot                Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+}
+
+model Trade {
+  id             String      @id @default(cuid())
+  lotId          String
+  buyerId        String
+  litresMl       Int
+  tokensCt       Int
+  amountCents    Int
+  status         TradeStatus @default(COMPLETED)
+  mintTxId       String?
+  swapTxId       String?
+  burnTxId       String?
+  failureReason  String?
+  idempotencyKey String      @unique
+  createdAt      DateTime    @default(now())
+
+  lot            Lot         @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  buyer          Account     @relation(fields: [buyerId], references: [id])
+}
+
+model Transfer {
+  id             String   @id @default(cuid())
+  lotId          String
+  fromId         String
+  toId           String
+  tokensCt       Int
+  memo           String?
+  txId           String
+  idempotencyKey String   @unique
+  createdAt      DateTime @default(now())
+
+  lot            Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  from           Account  @relation("TransferFrom", fields: [fromId], references: [id])
+  to             Account  @relation("TransferTo", fields: [toId], references: [id])
+}
+
+model Redemption {
+  id             String           @id @default(cuid())
+  code           String           @unique
+  lotId          String
+  holderId       String
+  tokensCt       Int
+  litresMl       Int
+  status         RedemptionStatus @default(REQUESTED)
+  pickupCode     String
+  requestTxId    String
+  handoverTxId   String?
+  burnTxId       String?
+  handoverSource String?
+  deadline       DateTime
+  requestedAt    DateTime         @default(now())
+  handoverAt     DateTime?
+  burnedAt       DateTime?
+  updatedAt      DateTime         @updatedAt
+
+  lot            Lot              @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  holder         Account          @relation(fields: [holderId], references: [id])
+}
+
+model AgentVerdict {
+  id             String   @id @default(cuid())
+  lotId          String
+  verdict        Verdict
+  reasons        String[]
+  explanation    String
+  ratioBps       Int
+  supplyCt       Int
+  attestedLitres Int
+  attestationSeq Int?
+  decisionSeq    Int?
+  createdAt      DateTime @default(now())
+
+  lot            Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+}
+
+model LedgerMessage {
+  id          String      @id @default(cuid())
+  topicId     String
+  seq         Int
+  type        MessageType
+  lotId       String?
+  payload     String
+  consensusTs DateTime
+  hash        String
+  createdAt   DateTime    @default(now())
+
+  lot         Lot?        @relation(fields: [lotId], references: [id], onDelete: SetNull)
+
+  @@unique([topicId, seq])
+}
+
+model TokenBalance {
+  id        String   @id @default(cuid())
+  tokenDbId String
+  accountId String
+  amount    Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  token     Token    @relation(fields: [tokenDbId], references: [id], onDelete: Cascade)
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenDbId, accountId])
+}
+
+model IdempotencyKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  scope     String
+  response  Json
+  createdAt DateTime @default(now())
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

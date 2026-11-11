@@ -1,0 +1,35 @@
+{
+  "name": "zitounadefi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"bun --cwd=apps/api run dev\" \"bun --cwd=apps/web run dev\"",
+    "dev:api": "bun --cwd=apps/api run dev",
+    "dev:web": "bun --cwd=apps/web run dev",
+    "db:up": "podman compose up -d db",
+    "db:down": "podman compose down",
+    "db:logs": "podman compose logs -f db",
+    "prisma:generate": "bun --cwd=apps/api run prisma:generate",
+    "prisma:migrate": "bun --cwd=apps/api run prisma:migrate",
+    "db:push": "bun --cwd=apps/api run db:push",
+    "db:reset": "bun --cwd=apps/api run db:reset",
+    "seed": "bun --cwd=apps/api run seed",
+    "setup:hedera": "bun --cwd=apps/api run setup:hedera",
+    "smoke": "bun --cwd=apps/api run smoke",
+    "test": "bun --cwd=packages/rules run test",
+    "test:api": "bun --cwd=apps/api run test",
+    "test:e2e": "bun --cwd=apps/web run test:e2e",
+    "test:all": "bun run test && bun run test:api && bun run test:e2e",
+    "build": "bun --cwd=apps/web run build",
+    "start": "bun --cwd=apps/api run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
